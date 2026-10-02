@@ -27,7 +27,7 @@ const SliderSection: React.FC = () => {
       label: t("config.stayFocused"),
       valueType: "mins",
       minValue: 1,
-      maxValue: 120,
+      maxValue: 180,
       value: stayFocus,
       handleConfigChange: useCallback(
         (value) => dispatch(setStayFocus(parseInt(value))),

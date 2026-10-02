@@ -15,21 +15,9 @@ on:
   workflow_dispatch:
 jobs:
   build:
-    name: "Build"
+    name: "Build (Windows x64)"
     environment: ${{ inputs.environment }}
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-            name: linux
-            task: build:linux-all
-          - os: macos-latest
-            name: mac
-            task: build:mac-all
-          - os: windows-latest
-            name: win
-            task: build:win-all
-    runs-on: ${{ matrix.os }}
+    runs-on: windows-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -46,71 +34,32 @@ jobs:
       - name: Install
         run: |
           yarn install --immutable --network-timeout 120000
-      - name: Prepare for app notarization
-        if: inputs.environment == 'Release' && startsWith(matrix.os, 'macos')
-        # Import Apple API key for app notarization on macOS
-        run: |
-          mkdir -p ~/private_keys/
-          echo '${{ secrets.APPLE_API_KEY_FILE }}' > ~/private_keys/AuthKey_${{ secrets.APPLE_API_KEY }}.p8
       - name: Build
         if: inputs.environment != 'Release'
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
         run: |
           yarn build
-          yarn lerna run ${{ matrix.task }} --stream
+          yarn lerna run build:win-x64 --stream
       - name: Build (Release)
         if: inputs.environment == 'Release'
         env:
-          APPLE_API_KEY_PATH: ~/private_keys/AuthKey_${{ secrets.APPLE_API_KEY }}.p8
-          API_KEY_ID: ${{ secrets.APPLE_API_KEY }}
-          API_KEY_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER }}
           CSC_LINK: ${{ secrets.APPLE_CERTIFICATE }}
           CSC_KEY_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
         run: |
           yarn build
-          yarn lerna run ${{ matrix.task }} --stream
-      - name: Build Snap
-        if: matrix.name == 'linux'
-        run: |
-          sudo snap install snapcraft --classic
-          yarn lerna run build:snap --stream
-      - name: Upload windows all-in-one build
-        uses: actions/upload-artifact@v6
-        with:
-          name: built-app-all-in-one-${{ matrix.name }}
-          path: |
-            app/electron/dist/Pomatez-v+([0-9]).+([0-9]).+([0-9])-win-*.exe
-      - name: Upload ia32 builds
-        uses: actions/upload-artifact@v6
-        with:
-          name: built-app-ia32-${{ matrix.name }}
-          path: |
-            app/electron/dist/Pomatez*ia32*.*
+          yarn lerna run build:win-x64 --stream
       - name: Upload x64 builds
         uses: actions/upload-artifact@v6
         with:
-          name: built-app-x64-${{ matrix.name }}
+          name: built-app-x64-win
           path: |
             app/electron/dist/Pomatez*x64*.*
             app/electron/dist/Pomatez*x86_64*.*
             app/electron/dist/Pomatez*amd64*.*
-      - name: Upload arm64 builds
-        uses: actions/upload-artifact@v6
-        with:
-          name: built-app-arm64-${{ matrix.name }}
-          path: |
-            app/electron/dist/Pomatez*arm64*.*
-            app/electron/dist/Pomatez*aarch64*.*
-      - name: Upload armv7l builds
-        uses: actions/upload-artifact@v6
-        with:
-          name: built-app-armv7l-${{ matrix.name }}
-          path: |
-            app/electron/dist/Pomatez*armv7l*.*
       - name: Upload autoupdaters
         uses: actions/upload-artifact@v6
         with:
-          name: built-app-AutoUpdater-${{ matrix.name }}
+          name: built-app-AutoUpdater-win
           path: |
             app/electron/dist/latest*

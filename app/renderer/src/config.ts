@@ -68,7 +68,7 @@ export const rangeConfig: ConfigSliderProps[] = [
     label: "Stay focused",
     valueType: "mins",
     minValue: 0,
-    maxValue: 60,
+    maxValue: 180,
     value: 30,
   },
   {
